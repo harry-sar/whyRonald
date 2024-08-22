@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Why Ronald?</title>
+    <link rel="manifest" href="/manifest.json" />
     <link
       rel="icon"
       href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐸</text></svg>"
@@ -135,7 +136,6 @@
           transform: scale(1.3) translateY(-100px) rotate(360deg);
         }
       }
-
       body {
         margin: 0;
         overflow: hidden;
@@ -149,7 +149,6 @@
           transform-origin: center;
         }
       }
-
       @media (max-width: 767px) {
         #bouncingImage {
           width: 125px;
@@ -179,7 +178,93 @@
     <script>
       const img = document.getElementById("bouncingImage");
 
-      // Function to get viewport dimensions
+      let isDragging = false;
+      let dragStartX = 0;
+      let dragStartY = 0;
+      let imgStartX = 0;
+      let imgStartY = 0;
+      let prevMouseX = 0;
+      let prevMouseY = 0;
+      let finalVelX = 0;
+      let finalVelY = 0;
+
+      function startDrag(x, y) {
+        isDragging = true;
+        dragStartX = x;
+        dragStartY = y;
+        imgStartX = posX;
+        imgStartY = posY;
+        prevMouseX = x;
+        prevMouseY = y;
+        velX = 0;
+        velY = 0;
+      }
+
+      function moveDrag(x, y) {
+        if (isDragging) {
+          const dx = x - dragStartX;
+          const dy = y - dragStartY;
+          posX = imgStartX + dx;
+          posY = imgStartY + dy;
+
+          // Prevent dragging out of bounds
+          const viewport = getViewportDimensions();
+          imgWidth = img.offsetWidth;
+          imgHeight = img.offsetHeight;
+
+          if (posX < 0) posX = 0;
+          if (posX > viewport.width - imgWidth)
+            posX = viewport.width - imgWidth;
+          if (posY < 0) posY = 0;
+          if (posY > viewport.height - imgHeight)
+            posY = viewport.height - imgHeight;
+
+          img.style.transform = `translate(${posX}px, ${posY}px) rotate(${angle}deg)`;
+
+          // Calculate velocity
+          finalVelX = x - prevMouseX;
+          finalVelY = y - prevMouseY;
+          prevMouseX = x;
+          prevMouseY = y;
+        }
+      }
+
+      function endDrag() {
+        if (isDragging) {
+          isDragging = false;
+          // Set velocity based on drag direction
+          velX = finalVelX * 0.1; // Adjust multiplier for desired responsiveness
+          velY = finalVelY * 0.1; // Adjust multiplier for desired responsiveness
+        }
+      }
+
+      // Mouse events
+      img.addEventListener("mousedown", (e) => {
+        startDrag(e.clientX, e.clientY);
+        e.preventDefault();
+      });
+
+      document.addEventListener("mousemove", (e) => {
+        moveDrag(e.clientX, e.clientY);
+      });
+
+      document.addEventListener("mouseup", endDrag);
+
+      // Touch events
+      img.addEventListener("touchstart", (e) => {
+        const touch = e.touches[0];
+        startDrag(touch.clientX, touch.clientY);
+        e.preventDefault();
+      });
+
+      img.addEventListener("touchmove", (e) => {
+        const touch = e.touches[0];
+        moveDrag(touch.clientX, touch.clientY);
+        e.preventDefault();
+      });
+
+      img.addEventListener("touchend", endDrag);
+
       function getViewportDimensions() {
         return {
           width: window.innerWidth,
@@ -187,66 +272,37 @@
         };
       }
 
-      // Initialize viewport dimensions and image properties
-      const viewport = getViewportDimensions();
-      let imgWidth = img.offsetWidth;
-      let imgHeight = img.offsetHeight;
-
-      let posX = Math.random() * (viewport.width - imgWidth);
-      let posY = Math.random() * (viewport.height - imgHeight);
+      let posX =
+        Math.random() * (getViewportDimensions().width - img.offsetWidth);
+      let posY =
+        Math.random() * (getViewportDimensions().height - img.offsetHeight);
       let velX = 1 * 4; // Speed in X direction
       let velY = 1 * 4; // Speed in Y direction
       let angle = 0;
 
       function update() {
-        // Retrieve viewport dimensions for current frame
         const viewport = getViewportDimensions();
-
-        viewport.width = window.innerWidth;
-        viewport.height = window.innerHeight;
         imgWidth = img.offsetWidth;
         imgHeight = img.offsetHeight;
 
-        // Update position
         posX += velX;
         posY += velY;
 
-        // Bounce off edges
-        if (posX <= 0) {
+        if (posX <= 0 || posX >= viewport.width - imgWidth) {
           velX *= -1;
-          posX = 0; // Ensure image is not out of bounds
+          posX = Math.max(0, Math.min(posX, viewport.width - imgWidth));
         }
-        if (posX >= viewport.width - imgWidth) {
-          velX *= -1;
-          posX = viewport.width - imgWidth; // Ensure image is not out of bounds
-        }
-        if (posY <= 0) {
+        if (posY <= 0 || posY >= viewport.height - imgHeight) {
           velY *= -1;
-          posY = 0; // Ensure image is not out of bounds
-        }
-        if (posY >= viewport.height - imgHeight) {
-          velY *= -1;
-          posY = viewport.height - imgHeight; // Ensure image is not out of bounds
+          posY = Math.max(0, Math.min(posY, viewport.height - imgHeight));
         }
 
-        // Apply transformation
         img.style.transform = `translate(${posX}px, ${posY}px) rotate(${angle}deg)`;
-
-        // Increase the angle for spinning
         angle += 2; // Change this value to adjust spin speed
 
         requestAnimationFrame(update);
       }
 
-      // Update image dimensions on window resize
-      window.addEventListener("resize", () => {
-        viewport.width = window.innerWidth;
-        viewport.height = window.innerHeight;
-        imgWidth = img.offsetWidth;
-        imgHeight = img.offsetHeight;
-      });
-
-      // Initialize the animation
       update();
     </script>
   </body>
